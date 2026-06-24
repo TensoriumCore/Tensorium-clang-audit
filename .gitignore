@@ -1,0 +1,36 @@
+# CMake build directories
+build/
+cmake-build-*/
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+
+# Compilation databases
+compile_commands.json
+.bear/
+.cache/
+
+# Build outputs
+*.o
+*.obj
+*.a
+*.so
+*.dylib
+*.dll
+*.exe
+
+# Clang/LLVM temporary output
+*.pcm
+*.pch
+*.gch
+
+# Editor and OS files
+.DS_Store
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log
