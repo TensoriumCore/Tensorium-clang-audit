@@ -7,6 +7,8 @@
 #include "clang/AST/Stmt.h"
 #include "clang/Basic/Diagnostic.h"
 #include "llvm/Support/raw_ostream.h"
+#include "clang/Basic/SourceManager.h"
+
 
 namespace {
 bool isCAllocationFunction(const clang::FunctionDecl *Function) {
@@ -19,6 +21,20 @@ bool isCAllocationFunction(const clang::FunctionDecl *Function) {
          Name == "realloc" || Name == "::realloc" || Name == "std::realloc" ||
          Name == "free" || Name == "::free" || Name == "std::free";
 }
+
+bool isInMainFile(const clang::ASTContext &Context,
+                  clang::SourceLocation Location) {
+  if (Location.isInvalid()) {
+    return false;
+  }
+
+  const clang::SourceManager &SourceManager = Context.getSourceManager();
+  const clang::SourceLocation ExpansionLocation =
+      SourceManager.getExpansionLoc(Location);
+
+  return SourceManager.getFileID(ExpansionLocation) ==
+         SourceManager.getMainFileID();
+}
 } // namespace
 
 namespace tensorium_clang_audit {
@@ -30,6 +46,9 @@ TensoriumClangAuditVisitor::TensoriumClangAuditVisitor(
 bool TensoriumClangAuditVisitor::VisitFunctionDecl(
     clang::FunctionDecl *Function) {
   if (!Function || !Function->isThisDeclarationADefinition()) {
+    return true;
+  }
+  if (!isInMainFile(Context, Function->getLocation())) {
     return true;
   }
 
@@ -77,7 +96,9 @@ bool TensoriumClangAuditVisitor::VisitCXXNewExpr(
   if (!Expression || LoopDepth == 0) {
     return true;
   }
-
+  if (!isInMainFile(Context, Expression->getBeginLoc())) {
+    return true;
+  }
   clang::DiagnosticsEngine &Diagnostics = Context.getDiagnostics();
 
   const unsigned DiagnosticID = Diagnostics.getCustomDiagID(
@@ -98,7 +119,9 @@ bool TensoriumClangAuditVisitor::VisitCallExpr(clang::CallExpr *Expression) {
   if (!isCAllocationFunction(Callee)) {
     return true;
   }
-
+  if (!isInMainFile(Context, Expression->getBeginLoc())) {
+    return true;
+  }
   clang::DiagnosticsEngine &Diagnostics = Context.getDiagnostics();
 
   const unsigned DiagnosticID =
