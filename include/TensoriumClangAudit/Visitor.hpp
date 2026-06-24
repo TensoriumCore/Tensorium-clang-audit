@@ -1,12 +1,17 @@
 #pragma once
 
+#include "clang/AST/ExprCXX.h"
 #include "clang/AST/RecursiveASTVisitor.h"
 #include "clang/AST/Stmt.h"
-#include "clang/AST/ExprCXX.h"
 
 namespace clang {
 class ASTContext;
+class CallExpr;
 class FunctionDecl;
+class CXXNewExpr;
+class DoStmt;
+class ForStmt;
+class WhleStmt;
 } // namespace clang
 
 namespace tensorium_clang_audit {
@@ -17,11 +22,13 @@ public:
   explicit TensoriumClangAuditVisitor(clang::ASTContext &Context);
 
   bool VisitFunctionDecl(clang::FunctionDecl *Function);
+  bool VisitCXXNewExpr(clang::CXXNewExpr *Expression);
+  bool VisitCallExpr(clang::CallExpr *Expression);
+  
   bool TraverseForStmt(clang::ForStmt *Statement);
   bool TraverseWhileStmt(clang::WhileStmt *Statement);
   bool TraverseDoStmt(clang::DoStmt *Statement);
 
-  bool VisitCXXNewExpr(clang::CXXNewExpr *Expression);
 
 private:
   clang::ASTContext &Context;

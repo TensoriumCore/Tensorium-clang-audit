@@ -1,3 +1,5 @@
+#include <cstdlib>
+
 void foo() {}
 
 int add(int a, int b) { return a + b; }
@@ -12,6 +14,17 @@ double sum_first_n(int n) {
   return total;
 }
 
+void c_allocation_in_loop(int n) {
+	for (int i = 0; i < n; i++) {
+		int *ptr = static_cast<int *>(std::malloc(sizeof(n)));
+
+		if (ptr) {
+			*ptr = i;
+			std::free(ptr);
+		}
+	}
+}
+
 void allocation_in_loop(int n) {
   for (int i = 0; i < n; ++i) {
     int *ptr = new int(i);
@@ -22,5 +35,6 @@ void allocation_in_loop(int n) {
 int main() {
   foo();
   allocation_in_loop(4);
+  c_allocation_in_loop(4);
   return add(1, 2) + static_cast<int>(sum_first_n(10));
 }
