@@ -1,8 +1,14 @@
 # tensorium-clang-audit
 
-Minimal C++17 Clang frontend plugin skeleton for future Tensorium audit checks.
+Minimal C++17 Clang frontend plugin for Tensorium audit checks.
 
 This project does not vendor LLVM or Clang. It expects an existing local LLVM/Clang installation and builds a shared plugin library named `TensoriumClangAudit`.
+
+The plugin currently reports dynamic allocation and deallocation inside loops:
+
+- C++ `new` / `new[]`
+- C++ `delete` / `delete[]`
+- C `malloc`, `calloc`, `realloc`, and `free`
 
 ## Build
 
@@ -39,4 +45,10 @@ Or use:
 ./scripts/run_sample.sh
 ```
 
-The plugin currently only prints a basic message and the names of visited function declarations. Real audit logic will be added later.
+## Test
+
+```sh
+./scripts/test_sample.sh
+```
+
+The test script builds the plugin, runs it on `examples/sample.cpp`, and checks that the expected warnings are emitted.

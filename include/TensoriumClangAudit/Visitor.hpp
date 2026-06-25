@@ -7,11 +7,11 @@
 namespace clang {
 class ASTContext;
 class CallExpr;
-class FunctionDecl;
+class CXXDeleteExpr;
 class CXXNewExpr;
 class DoStmt;
 class ForStmt;
-class WhleStmt;
+class WhileStmt;
 } // namespace clang
 
 namespace tensorium_clang_audit {
@@ -21,14 +21,13 @@ class TensoriumClangAuditVisitor final
 public:
   explicit TensoriumClangAuditVisitor(clang::ASTContext &Context);
 
-  bool VisitFunctionDecl(clang::FunctionDecl *Function);
   bool VisitCXXNewExpr(clang::CXXNewExpr *Expression);
+  bool VisitCXXDeleteExpr(clang::CXXDeleteExpr *Expression);
   bool VisitCallExpr(clang::CallExpr *Expression);
-  
+
   bool TraverseForStmt(clang::ForStmt *Statement);
   bool TraverseWhileStmt(clang::WhileStmt *Statement);
   bool TraverseDoStmt(clang::DoStmt *Statement);
-
 
 private:
   clang::ASTContext &Context;

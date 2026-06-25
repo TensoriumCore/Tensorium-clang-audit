@@ -6,9 +6,7 @@
 #include "clang/AST/ExprCXX.h"
 #include "clang/AST/Stmt.h"
 #include "clang/Basic/Diagnostic.h"
-#include "llvm/Support/raw_ostream.h"
 #include "clang/Basic/SourceManager.h"
-
 
 namespace {
 bool isCAllocationFunction(const clang::FunctionDecl *Function) {
@@ -18,8 +16,15 @@ bool isCAllocationFunction(const clang::FunctionDecl *Function) {
   const std::string Name = Function->getQualifiedNameAsString();
   return Name == "malloc" || Name == "::malloc" || Name == "std::malloc" ||
          Name == "calloc" || Name == "::calloc" || Name == "std::calloc" ||
-         Name == "realloc" || Name == "::realloc" || Name == "std::realloc" ||
-         Name == "free" || Name == "::free" || Name == "std::free";
+         Name == "realloc" || Name == "::realloc" || Name == "std::realloc";
+}
+
+bool isCDeallocationFunction(const clang::FunctionDecl *Function) {
+  if (!Function) {
+    return false;
+  }
+  const std::string Name = Function->getQualifiedNameAsString();
+  return Name == "free" || Name == "::free" || Name == "std::free";
 }
 
 bool isInMainFile(const clang::ASTContext &Context,
@@ -42,20 +47,6 @@ namespace tensorium_clang_audit {
 TensoriumClangAuditVisitor::TensoriumClangAuditVisitor(
     clang::ASTContext &Context)
     : Context(Context) {}
-
-bool TensoriumClangAuditVisitor::VisitFunctionDecl(
-    clang::FunctionDecl *Function) {
-  if (!Function || !Function->isThisDeclarationADefinition()) {
-    return true;
-  }
-  if (!isInMainFile(Context, Function->getLocation())) {
-    return true;
-  }
-
-  llvm::errs() << "TensoriumClangAudit: function "
-               << Function->getQualifiedNameAsString() << "\n";
-  return true;
-}
 
 bool TensoriumClangAuditVisitor::TraverseForStmt(clang::ForStmt *Statement) {
   ++LoopDepth;
@@ -109,6 +100,24 @@ bool TensoriumClangAuditVisitor::VisitCXXNewExpr(
   return true;
 }
 
+bool TensoriumClangAuditVisitor::VisitCXXDeleteExpr(
+    clang::CXXDeleteExpr *Expression) {
+  if (!Expression || LoopDepth == 0) {
+    return true;
+  }
+  if (!isInMainFile(Context, Expression->getBeginLoc())) {
+    return true;
+  }
+  clang::DiagnosticsEngine &Diagnostics = Context.getDiagnostics();
+
+  const unsigned DiagnosticID = Diagnostics.getCustomDiagID(
+      clang::DiagnosticsEngine::Warning, "dynamic deallocation inside loop");
+
+  Diagnostics.Report(Expression->getBeginLoc(), DiagnosticID);
+
+  return true;
+}
+
 bool TensoriumClangAuditVisitor::VisitCallExpr(clang::CallExpr *Expression) {
   if (!Expression || LoopDepth == 0) {
     return true;
@@ -116,7 +125,9 @@ bool TensoriumClangAuditVisitor::VisitCallExpr(clang::CallExpr *Expression) {
 
   const clang::FunctionDecl *Callee = Expression->getDirectCallee();
 
-  if (!isCAllocationFunction(Callee)) {
+  const bool IsAllocation = isCAllocationFunction(Callee);
+  const bool IsDeallocation = isCDeallocationFunction(Callee);
+  if (!IsAllocation && !IsDeallocation) {
     return true;
   }
   if (!isInMainFile(Context, Expression->getBeginLoc())) {
@@ -125,8 +136,11 @@ bool TensoriumClangAuditVisitor::VisitCallExpr(clang::CallExpr *Expression) {
   clang::DiagnosticsEngine &Diagnostics = Context.getDiagnostics();
 
   const unsigned DiagnosticID =
-      Diagnostics.getCustomDiagID(clang::DiagnosticsEngine::Warning,
-                                  "C allocation/deallocation call inside loop");
+      IsAllocation
+          ? Diagnostics.getCustomDiagID(clang::DiagnosticsEngine::Warning,
+                                        "C allocation call inside loop")
+          : Diagnostics.getCustomDiagID(clang::DiagnosticsEngine::Warning,
+                                        "C deallocation call inside loop");
 
   Diagnostics.Report(Expression->getBeginLoc(), DiagnosticID);
 

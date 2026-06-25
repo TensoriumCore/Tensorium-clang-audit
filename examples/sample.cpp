@@ -15,20 +15,23 @@ double sum_first_n(int n) {
 }
 
 void c_allocation_in_loop(int n) {
-	for (int i = 0; i < n; i++) {
-		int *ptr = static_cast<int *>(std::malloc(sizeof(n)));
+  for (int i = 0; i < n; i++) {
+    int *ptr = static_cast<int *>(std::malloc(sizeof(n)));
 
-		if (ptr) {
-			*ptr = i;
-			std::free(ptr);
-		}
-	}
+    if (ptr) {
+      *ptr = i;
+      std::free(ptr);
+    }
+  }
 }
 
 void allocation_in_loop(int n) {
   for (int i = 0; i < n; ++i) {
     int *ptr = new int(i);
     delete ptr;
+
+    int *values = new int[n];
+    delete[] values;
   }
 }
 
