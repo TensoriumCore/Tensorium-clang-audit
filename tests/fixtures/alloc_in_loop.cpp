@@ -20,3 +20,21 @@ void c_allocation_in_loop(int n) {
     }
   }
 }
+
+void nested_cpp_allocation_in_loop(int n) {
+  for (int i = 0; i < n; ++i) {
+    for (int j = 0; j < n; ++j) {
+      int *value = new int(i + j);
+      delete value;
+    }
+  }
+}
+
+void nested_c_allocation_in_loop(int n) {
+  for (int i = 0; i < n; ++i) {
+    for (int j = 0; j < n; ++j) {
+      int *value = static_cast<int *>(std::malloc(sizeof(int)));
+      std::free(value);
+    }
+  }
+}

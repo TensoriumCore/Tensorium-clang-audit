@@ -25,6 +25,15 @@ void c_allocation_in_loop(int n) {
   }
 }
 
+void nested_allocation_in_loop(int n) {
+  for (int i = 0; i < n; ++i) {
+    for (int j = 0; j < n; ++j) {
+      int *value = new int(i + j);
+      delete value;
+    }
+  }
+}
+
 void allocation_in_loop(int n) {
   for (int i = 0; i < n; ++i) {
     int *ptr = new int(i);
@@ -39,5 +48,6 @@ int main() {
   foo();
   allocation_in_loop(4);
   c_allocation_in_loop(4);
+  nested_allocation_in_loop(4);
   return add(1, 2) + static_cast<int>(sum_first_n(10));
 }

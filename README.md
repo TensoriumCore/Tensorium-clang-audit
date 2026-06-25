@@ -18,6 +18,7 @@ Diagnostics use stable `TCAxxx` identifiers:
 - `TCA003`: C allocation call inside loop
 - `TCA004`: C deallocation call inside loop
 - `TCA005`: expensive math function call inside loop
+- `TCA006`: allocation or deallocation inside nested loop
 
 Each warning includes a follow-up note with a short remediation hint.
 

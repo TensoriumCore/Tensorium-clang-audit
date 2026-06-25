@@ -18,6 +18,8 @@ constexpr char TCA002[] = "TCA002: C++ deallocation expression inside loop";
 constexpr char TCA003[] = "TCA003: C allocation call inside loop";
 constexpr char TCA004[] = "TCA004: C deallocation call inside loop";
 constexpr char TCA005[] = "TCA005: expensive math function call inside loop";
+constexpr char TCA006[] =
+    "TCA006: allocation or deallocation inside nested loop";
 
 constexpr char TCA001Note[] =
     "consider reusing storage outside the loop or using a stack/value object";
@@ -29,6 +31,8 @@ constexpr char TCA004Note[] = "consider freeing loop-owned storage after the "
                               "loop when ownership allows it";
 constexpr char TCA005Note[] =
     "consider hoisting loop-invariant math or using a cheaper recurrence";
+constexpr char TCA006Note[] = "consider moving allocation outside the outer "
+                              "loop or reusing a workspace buffer";
 
 bool isCAllocationFunction(const clang::FunctionDecl *Function) {
   if (!Function) {
@@ -141,7 +145,13 @@ bool TensoriumClangAuditVisitor::VisitCXXNewExpr(
   if (!isInMainFile(Context, Expression->getBeginLoc())) {
     return true;
   }
-  reportWarningWithNote(Context, Expression->getBeginLoc(), TCA001, TCA001Note);
+  if (LoopDepth > 1) {
+    reportWarningWithNote(Context, Expression->getBeginLoc(), TCA006,
+                          TCA006Note);
+  } else {
+    reportWarningWithNote(Context, Expression->getBeginLoc(), TCA001,
+                          TCA001Note);
+  }
 
   return true;
 }
@@ -157,7 +167,13 @@ bool TensoriumClangAuditVisitor::VisitCXXDeleteExpr(
   if (!isInMainFile(Context, Expression->getBeginLoc())) {
     return true;
   }
-  reportWarningWithNote(Context, Expression->getBeginLoc(), TCA002, TCA002Note);
+  if (LoopDepth > 1) {
+    reportWarningWithNote(Context, Expression->getBeginLoc(), TCA006,
+                          TCA006Note);
+  } else {
+    reportWarningWithNote(Context, Expression->getBeginLoc(), TCA002,
+                          TCA002Note);
+  }
 
   return true;
 }
@@ -181,7 +197,10 @@ bool TensoriumClangAuditVisitor::VisitCallExpr(clang::CallExpr *Expression) {
   if (!isInMainFile(Context, Expression->getBeginLoc())) {
     return true;
   }
-  if (IsAllocation) {
+  if ((IsAllocation || IsDeallocation) && LoopDepth > 1) {
+    reportWarningWithNote(Context, Expression->getBeginLoc(), TCA006,
+                          TCA006Note);
+  } else if (IsAllocation) {
     reportWarningWithNote(Context, Expression->getBeginLoc(), TCA003,
                           TCA003Note);
   } else if (IsDeallocation) {
@@ -191,7 +210,6 @@ bool TensoriumClangAuditVisitor::VisitCallExpr(clang::CallExpr *Expression) {
     reportWarningWithNote(Context, Expression->getBeginLoc(), TCA005,
                           TCA005Note);
   }
-
   return true;
 }
 
