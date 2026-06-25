@@ -4,11 +4,22 @@ Minimal C++17 Clang frontend plugin for Tensorium audit checks.
 
 This project does not vendor LLVM or Clang. It expects an existing local LLVM/Clang installation and builds a shared plugin library named `TensoriumClangAudit`.
 
-The plugin currently reports dynamic allocation and deallocation inside loops:
+The plugin currently reports:
 
 - C++ `new` / `new[]`
 - C++ `delete` / `delete[]`
 - C `malloc`, `calloc`, `realloc`, and `free`
+- expensive math calls inside loops: `std::pow`, `std::sqrt`, `std::sin`, `std::cos`
+
+Diagnostics use stable `TCAxxx` identifiers:
+
+- `TCA001`: C++ allocation expression inside loop
+- `TCA002`: C++ deallocation expression inside loop
+- `TCA003`: C allocation call inside loop
+- `TCA004`: C deallocation call inside loop
+- `TCA005`: expensive math function call inside loop
+
+Each warning includes a follow-up note with a short remediation hint.
 
 ## Build
 
@@ -45,10 +56,29 @@ Or use:
 ./scripts/run_sample.sh
 ```
 
+Plugin options can be passed with Clang's frontend plugin argument syntax:
+
+```sh
+clang++ -std=c++17 \
+  -Xclang -load -Xclang ./build/libTensoriumClangAudit.so \
+  -Xclang -plugin -Xclang tensorium-clang-audit \
+  -Xclang -plugin-arg-tensorium-clang-audit \
+  -Xclang -checks=alloc-in-loop \
+  -c examples/sample.cpp
+```
+
+Supported options:
+
+- `-quiet`: accept quiet mode for non-diagnostic plugin output
+- `-checks=alloc-in-loop`: enable the allocation-in-loop check
+- `-checks=math-in-loop`: enable the math-in-loop check
+- `-checks=all`: enable all checks
+- `-checks=none`: disable all checks
+
 ## Test
 
 ```sh
-./scripts/test_sample.sh
+./scripts/test.sh
 ```
 
-The test script builds the plugin, runs it on `examples/sample.cpp`, and checks that the expected warnings are emitted.
+The test script builds the plugin and runs positive and negative fixtures from `tests/fixtures`.

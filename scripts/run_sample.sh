@@ -13,4 +13,5 @@ fi
 "${CLANGXX}" -std=c++17 \
   -Xclang -load -Xclang "${PLUGIN_PATH}" \
   -Xclang -plugin -Xclang tensorium-clang-audit \
+  "$@" \
   -c examples/sample.cpp

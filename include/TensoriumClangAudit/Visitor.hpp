@@ -16,10 +16,13 @@ class WhileStmt;
 
 namespace tensorium_clang_audit {
 
+struct TensoriumClangAuditOptions;
+
 class TensoriumClangAuditVisitor final
     : public clang::RecursiveASTVisitor<TensoriumClangAuditVisitor> {
 public:
-  explicit TensoriumClangAuditVisitor(clang::ASTContext &Context);
+  TensoriumClangAuditVisitor(clang::ASTContext &Context,
+                             const TensoriumClangAuditOptions &Options);
 
   bool VisitCXXNewExpr(clang::CXXNewExpr *Expression);
   bool VisitCXXDeleteExpr(clang::CXXDeleteExpr *Expression);
@@ -31,6 +34,7 @@ public:
 
 private:
   clang::ASTContext &Context;
+  const TensoriumClangAuditOptions &Options;
   unsigned LoopDepth = 0;
 };
 
