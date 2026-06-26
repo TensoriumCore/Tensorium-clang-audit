@@ -1,7 +1,7 @@
-#include "TensoriumClangAudit/Plugin.hpp"
+#include "TensoriumClangAudit/Clang/Plugin.hpp"
 
-#include "TensoriumClangAudit/Options.hpp"
-#include "TensoriumClangAudit/Visitor.hpp"
+#include "TensoriumClangAudit/Clang/Options.hpp"
+#include "TensoriumClangAudit/Clang/Visitor.hpp"
 
 #include "clang/AST/ASTContext.h"
 #include "clang/Basic/Diagnostic.h"

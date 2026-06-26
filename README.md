@@ -4,6 +4,30 @@ Minimal C++17 Clang frontend plugin for Tensorium audit checks.
 
 This project does not vendor LLVM or Clang. It expects an existing local LLVM/Clang installation and builds a shared plugin library named `TensoriumClangAudit`.
 
+## Layout
+
+The repository is split so the Clang frontend plugin can grow without blocking a future LLVM IR plugin/pass:
+
+```txt
+include/TensoriumClangAudit/
+  Clang/
+    Checks/      # Clang AST check classifiers
+    Support/     # Clang diagnostic and source helpers
+    Options.hpp
+    Plugin.hpp
+    Visitor.hpp
+src/
+  clang/
+    Checks/
+    Support/
+    Plugin.cpp
+    Visitor.cpp
+tests/
+  fixtures/
+```
+
+Top-level headers such as `include/TensoriumClangAudit/Visitor.hpp` are compatibility wrappers around the `Clang/` headers. A future LLVM IR pass should live beside this under its own `LLVM/` include/source subtree and build as a separate plugin target.
+
 The plugin currently reports:
 
 - C++ `new` / `new[]`

@@ -15,9 +15,17 @@ message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
 message(STATUS "LLVM include dirs: ${LLVM_INCLUDE_DIRS}")
 message(STATUS "Clang include dirs: ${CLANG_INCLUDE_DIRS}")
 
+set(TENSORIUM_CLANG_AUDIT_SOURCES
+  src/clang/Plugin.cpp
+  src/clang/Visitor.cpp
+  src/clang/Checks/AllocationInLoopCheck.cpp
+  src/clang/Checks/MathInLoopCheck.cpp
+  src/clang/Support/DiagnosticReporter.cpp
+  src/clang/Support/SourceUtils.cpp
+)
+
 add_library(TensoriumClangAudit SHARED
-  src/Plugin.cpp
-  src/Visitor.cpp
+  ${TENSORIUM_CLANG_AUDIT_SOURCES}
 )
 
 target_include_directories(TensoriumClangAudit
