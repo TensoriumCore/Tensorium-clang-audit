@@ -20,11 +20,13 @@ TensoriumClangAuditVisitor::TensoriumClangAuditVisitor(
 
 bool TensoriumClangAuditVisitor::TraverseForStmt(clang::ForStmt *Statement) {
   ++LoopDepth;
+  LoopStack.push_back(Statement);
 
   const bool Result =
       clang::RecursiveASTVisitor<TensoriumClangAuditVisitor>::TraverseForStmt(
           Statement);
 
+  LoopStack.pop_back();
   --LoopDepth;
   return Result;
 }
@@ -32,22 +34,26 @@ bool TensoriumClangAuditVisitor::TraverseForStmt(clang::ForStmt *Statement) {
 bool TensoriumClangAuditVisitor::TraverseWhileStmt(
     clang::WhileStmt *Statement) {
   ++LoopDepth;
+  LoopStack.push_back(Statement);
 
   const bool Result =
       clang::RecursiveASTVisitor<TensoriumClangAuditVisitor>::TraverseWhileStmt(
           Statement);
 
+  LoopStack.pop_back();
   --LoopDepth;
   return Result;
 }
 
 bool TensoriumClangAuditVisitor::TraverseDoStmt(clang::DoStmt *Statement) {
   ++LoopDepth;
+  LoopStack.push_back(Statement);
 
   const bool Result =
       clang::RecursiveASTVisitor<TensoriumClangAuditVisitor>::TraverseDoStmt(
           Statement);
 
+  LoopStack.pop_back();
   --LoopDepth;
   return Result;
 }
@@ -120,8 +126,15 @@ bool TensoriumClangAuditVisitor::VisitCallExpr(clang::CallExpr *Expression) {
     reportDiagnostic(Context, Expression->getBeginLoc(),
                      TensoriumDiagnostic::CDeallocationInLoop);
   } else {
+    const clang::Stmt *CurrentLoop =
+        LoopStack.empty() ? nullptr : LoopStack.back();
+    const bool IsLoopInvariant =
+        isLoopInvariantMathCall(Expression, CurrentLoop);
+
     reportDiagnostic(Context, Expression->getBeginLoc(),
-                     TensoriumDiagnostic::ExpensiveMathInLoop);
+                     IsLoopInvariant
+                         ? TensoriumDiagnostic::LoopInvariantExpensiveMathInLoop
+                         : TensoriumDiagnostic::ExpensiveMathInLoop);
   }
 
   return true;

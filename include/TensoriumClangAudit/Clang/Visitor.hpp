@@ -3,6 +3,7 @@
 #include "clang/AST/ExprCXX.h"
 #include "clang/AST/RecursiveASTVisitor.h"
 #include "clang/AST/Stmt.h"
+#include <vector>
 
 namespace clang {
 class ASTContext;
@@ -36,6 +37,7 @@ private:
   clang::ASTContext &Context;
   const TensoriumClangAuditOptions &Options;
   unsigned LoopDepth = 0;
+  std::vector<const clang::Stmt *> LoopStack;
 };
 
 } // namespace tensorium_clang_audit

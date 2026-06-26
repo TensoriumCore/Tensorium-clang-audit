@@ -113,7 +113,9 @@ log_diagnostics "math-in-loop" "${MATH_OUTPUT}"
 
 expect_output "${MATH_OUTPUT}" "TCA005: expensive math function call inside loop"
 expect_output "${MATH_OUTPUT}" "note: consider hoisting loop-invariant math"
-expect_warning_count "${MATH_OUTPUT}" 4
+expect_output "${MATH_OUTPUT}" "TCA007: loop-invariant expensive math function call inside loop"
+expect_output "${MATH_OUTPUT}" "note: consider computing this value once before the loop"
+expect_warning_count "${MATH_OUTPUT}" 6
 
 DISABLED_OUTPUT="$(run_filtered tests/fixtures/alloc_in_loop.cpp \
   -Xclang -plugin-arg-tensorium-clang-audit \

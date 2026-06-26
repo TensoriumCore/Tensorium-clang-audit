@@ -14,6 +14,8 @@ constexpr char TCA004[] = "TCA004: C deallocation call inside loop";
 constexpr char TCA005[] = "TCA005: expensive math function call inside loop";
 constexpr char TCA006[] =
     "TCA006: allocation or deallocation inside nested loop";
+constexpr char TCA007[] =
+    "TCA007: loop-invariant expensive math function call inside loop";
 
 constexpr char TCA001Note[] =
     "consider reusing storage outside the loop or using a stack/value object";
@@ -27,6 +29,8 @@ constexpr char TCA005Note[] =
     "consider hoisting loop-invariant math or using a cheaper recurrence";
 constexpr char TCA006Note[] = "consider moving allocation outside the outer "
                               "loop or reusing a workspace buffer";
+constexpr char TCA007Note[] =
+    "consider computing this value once before the loop";
 
 template <std::size_t WarningSize, std::size_t NoteSize>
 void reportWarningWithNote(clang::ASTContext &Context,
@@ -68,6 +72,9 @@ void reportDiagnostic(clang::ASTContext &Context,
     break;
   case TensoriumDiagnostic::NestedAllocationInLoop:
     reportWarningWithNote(Context, Location, TCA006, TCA006Note);
+    break;
+  case TensoriumDiagnostic::LoopInvariantExpensiveMathInLoop:
+    reportWarningWithNote(Context, Location, TCA007, TCA007Note);
     break;
   }
 }
