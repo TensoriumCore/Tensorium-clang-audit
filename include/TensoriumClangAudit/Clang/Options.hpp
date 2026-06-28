@@ -2,10 +2,14 @@
 
 namespace tensorium_clang_audit {
 
+struct LoopAnalysisOptions {
+  bool Alloc = true;
+  bool Maths = true;
+};
+
 struct TensoriumClangAuditOptions {
   bool Quiet = false;
-  bool CheckAllocInLoop = true;
-  bool CheckMathInLoop = true;
+  LoopAnalysisOptions LoopAnalysis;
 };
 
 } // namespace tensorium_clang_audit

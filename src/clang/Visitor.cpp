@@ -63,7 +63,7 @@ bool TensoriumClangAuditVisitor::VisitCXXNewExpr(
   if (!Expression || LoopDepth == 0) {
     return true;
   }
-  if (!Options.CheckAllocInLoop) {
+  if (!Options.LoopAnalysis.Alloc) {
     return true;
   }
   if (!isInMainFile(Context, Expression->getBeginLoc())) {
@@ -82,7 +82,7 @@ bool TensoriumClangAuditVisitor::VisitCXXDeleteExpr(
   if (!Expression || LoopDepth == 0) {
     return true;
   }
-  if (!Options.CheckAllocInLoop) {
+  if (!Options.LoopAnalysis.Alloc) {
     return true;
   }
   if (!isInMainFile(Context, Expression->getBeginLoc())) {
@@ -104,11 +104,11 @@ bool TensoriumClangAuditVisitor::VisitCallExpr(clang::CallExpr *Expression) {
   const clang::FunctionDecl *Callee = Expression->getDirectCallee();
 
   const bool IsAllocation =
-      Options.CheckAllocInLoop && isCAllocationFunction(Callee);
+      Options.LoopAnalysis.Alloc && isCAllocationFunction(Callee);
   const bool IsDeallocation =
-      Options.CheckAllocInLoop && isCDeallocationFunction(Callee);
+      Options.LoopAnalysis.Alloc && isCDeallocationFunction(Callee);
   const bool IsExpensiveMath =
-      Options.CheckMathInLoop && isExpensiveMathFunction(Callee);
+      Options.LoopAnalysis.Maths && isExpensiveMathFunction(Callee);
   if (!IsAllocation && !IsDeallocation && !IsExpensiveMath) {
     return true;
   }

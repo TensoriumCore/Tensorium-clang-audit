@@ -91,8 +91,8 @@ run_filtered() {
 
 ALLOC_OUTPUT="$(run_filtered tests/fixtures/alloc_in_loop.cpp \
   -Xclang -plugin-arg-tensorium-clang-audit \
-  -Xclang -checks=alloc-in-loop)"
-log_diagnostics "alloc-in-loop" "${ALLOC_OUTPUT}"
+  -Xclang --loop-analyse=alloc)"
+log_diagnostics "loop-analyse=alloc" "${ALLOC_OUTPUT}"
 
 expect_output "${ALLOC_OUTPUT}" "TCA001: C++ allocation expression inside loop"
 expect_output "${ALLOC_OUTPUT}" "TCA002: C++ deallocation expression inside loop"
@@ -108,8 +108,8 @@ expect_warning_count "${ALLOC_OUTPUT}" 10
 
 MATH_OUTPUT="$(run_filtered tests/fixtures/math_in_loop.cpp \
   -Xclang -plugin-arg-tensorium-clang-audit \
-  -Xclang -checks=math-in-loop)"
-log_diagnostics "math-in-loop" "${MATH_OUTPUT}"
+  -Xclang --loop-analyse=maths)"
+log_diagnostics "loop-analyse=maths" "${MATH_OUTPUT}"
 
 expect_output "${MATH_OUTPUT}" "TCA005: expensive math function call inside loop"
 expect_output "${MATH_OUTPUT}" "note: consider hoisting loop-invariant math"
@@ -117,18 +117,32 @@ expect_output "${MATH_OUTPUT}" "TCA007: loop-invariant expensive math function c
 expect_output "${MATH_OUTPUT}" "note: consider computing this value once before the loop"
 expect_warning_count "${MATH_OUTPUT}" 6
 
+ALL_OUTPUT="$(run_filtered tests/fixtures/math_in_loop.cpp \
+  -Xclang -plugin-arg-tensorium-clang-audit \
+  -Xclang --loop-analyse=all)"
+log_diagnostics "loop-analyse=all" "${ALL_OUTPUT}"
+expect_output "${ALL_OUTPUT}" "TCA007: loop-invariant expensive math function call inside loop"
+expect_warning_count "${ALL_OUTPUT}" 6
+
+LEGACY_OUTPUT="$(run_filtered tests/fixtures/alloc_in_loop.cpp \
+  -Xclang -plugin-arg-tensorium-clang-audit \
+  -Xclang -checks=alloc-in-loop)"
+log_diagnostics "legacy checks=alloc-in-loop" "${LEGACY_OUTPUT}"
+expect_output "${LEGACY_OUTPUT}" "TCA006: allocation or deallocation inside nested loop"
+expect_warning_count "${LEGACY_OUTPUT}" 10
+
 DISABLED_OUTPUT="$(run_filtered tests/fixtures/alloc_in_loop.cpp \
   -Xclang -plugin-arg-tensorium-clang-audit \
-  -Xclang -checks=none)"
-log_diagnostics "checks=none" "${DISABLED_OUTPUT}"
+  -Xclang --loop-analyse=none)"
+log_diagnostics "loop-analyse=none" "${DISABLED_OUTPUT}"
 expect_no_diagnostics "${DISABLED_OUTPUT}"
 
 QUIET_OUTPUT="$(run_filtered tests/fixtures/alloc_in_loop.cpp \
   -Xclang -plugin-arg-tensorium-clang-audit \
   -Xclang -quiet \
   -Xclang -plugin-arg-tensorium-clang-audit \
-  -Xclang -checks=alloc-in-loop)"
-log_diagnostics "quiet alloc-in-loop" "${QUIET_OUTPUT}"
+  -Xclang --loop-analyse=alloc)"
+log_diagnostics "quiet loop-analyse=alloc" "${QUIET_OUTPUT}"
 expect_output "${QUIET_OUTPUT}" "TCA001: C++ allocation expression inside loop"
 
 NEGATIVE_OUTPUT="$(run_filtered tests/fixtures/no_alloc_in_loop.cpp)"
@@ -137,7 +151,7 @@ expect_no_diagnostics "${NEGATIVE_OUTPUT}"
 
 NEGATIVE_MATH_OUTPUT="$(run_filtered tests/fixtures/no_math_in_loop.cpp \
   -Xclang -plugin-arg-tensorium-clang-audit \
-  -Xclang -checks=math-in-loop)"
+  -Xclang --loop-analyse=maths)"
 log_diagnostics "negative math fixture" "${NEGATIVE_MATH_OUTPUT}"
 expect_no_diagnostics "${NEGATIVE_MATH_OUTPUT}"
 

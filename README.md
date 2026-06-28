@@ -69,10 +69,35 @@ Or use the helper script:
 
 ## Run
 
+Basic plugin invocation:
+
 ```sh
 clang++ -std=c++17 \
   -Xclang -load -Xclang ./build/libTensoriumClangAudit.so \
   -Xclang -plugin -Xclang tensorium-clang-audit \
+  -c examples/sample.cpp
+```
+
+To select loop analyses, add `-plugin-arg-tensorium-clang-audit` followed by
+the option:
+
+```sh
+clang++ -std=c++17 \
+  -Xclang -load -Xclang ./build/libTensoriumClangAudit.so \
+  -Xclang -plugin -Xclang tensorium-clang-audit \
+  -Xclang -plugin-arg-tensorium-clang-audit \
+  -Xclang --loop-analyse=alloc \
+  -c examples/sample.cpp
+```
+
+Enable all loop analyses:
+
+```sh
+clang++ -std=c++17 \
+  -Xclang -load -Xclang ./build/libTensoriumClangAudit.so \
+  -Xclang -plugin -Xclang tensorium-clang-audit \
+  -Xclang -plugin-arg-tensorium-clang-audit \
+  -Xclang --loop-analyse=all \
   -c examples/sample.cpp
 ```
 
@@ -82,24 +107,24 @@ Or use:
 ./scripts/run_sample.sh
 ```
 
-Plugin options can be passed with Clang's frontend plugin argument syntax:
+`run_sample.sh` forwards extra arguments to Clang, so this is equivalent:
 
 ```sh
-clang++ -std=c++17 \
-  -Xclang -load -Xclang ./build/libTensoriumClangAudit.so \
-  -Xclang -plugin -Xclang tensorium-clang-audit \
+./scripts/run_sample.sh \
   -Xclang -plugin-arg-tensorium-clang-audit \
-  -Xclang -checks=alloc-in-loop \
-  -c examples/sample.cpp
+  -Xclang --loop-analyse=maths
 ```
 
 Supported options:
 
 - `-quiet`: accept quiet mode for non-diagnostic plugin output
-- `-checks=alloc-in-loop`: enable the allocation-in-loop check
-- `-checks=math-in-loop`: enable the math-in-loop check
-- `-checks=all`: enable all checks
-- `-checks=none`: disable all checks
+- `--loop-analyse=all`: enable every loop analysis
+- `--loop-analyse=none`: disable loop analysis
+- `--loop-analyse=alloc`: enable allocation/deallocation loop analysis
+- `--loop-analyse=maths`: enable expensive math loop analysis
+- `--loop-analyse=alloc,maths`: enable selected loop analyses
+
+Legacy `-checks=all`, `-checks=none`, `-checks=alloc-in-loop`, and `-checks=math-in-loop` are still accepted as compatibility aliases.
 
 ## Test
 

@@ -6,8 +6,69 @@
 #include "clang/AST/ASTContext.h"
 #include "clang/Basic/Diagnostic.h"
 #include "clang/Frontend/CompilerInstance.h"
+#include "llvm/ADT/SmallVector.h"
 
 #include <string>
+
+namespace {
+llvm::StringRef normalizePluginArg(llvm::StringRef Arg) {
+  while (Arg.consume_front("-")) {
+  }
+  return Arg;
+}
+
+bool applyLoopAnalyseOption(
+    llvm::StringRef Value,
+    tensorium_clang_audit::LoopAnalysisOptions &Options) {
+  llvm::SmallVector<llvm::StringRef, 4> Values;
+  Value.split(Values, ",");
+
+  if (Values.empty()) {
+    return false;
+  }
+
+  tensorium_clang_audit::LoopAnalysisOptions ParsedOptions;
+  ParsedOptions.Alloc = false;
+  ParsedOptions.Maths = false;
+  bool SawKnownValue = false;
+  for (llvm::StringRef Entry : Values) {
+    Entry = Entry.trim();
+
+    if (Entry == "all") {
+      ParsedOptions.Alloc = true;
+      ParsedOptions.Maths = true;
+      SawKnownValue = true;
+      continue;
+    }
+
+    if (Entry == "none") {
+      ParsedOptions.Alloc = false;
+      ParsedOptions.Maths = false;
+      SawKnownValue = true;
+      continue;
+    }
+
+    if (Entry == "alloc" || Entry == "allocation" || Entry == "alloc-in-loop") {
+      ParsedOptions.Alloc = true;
+      SawKnownValue = true;
+      continue;
+    }
+
+    if (Entry == "maths" || Entry == "math" || Entry == "math-in-loop") {
+      ParsedOptions.Maths = true;
+      SawKnownValue = true;
+      continue;
+    }
+
+    return false;
+  }
+
+  if (SawKnownValue) {
+    Options = ParsedOptions;
+  }
+  return SawKnownValue;
+}
+} // namespace
 
 namespace tensorium_clang_audit {
 
@@ -33,36 +94,25 @@ bool TensoriumClangAuditAction::ParseArgs(
     const clang::CompilerInstance &Compiler,
     const std::vector<std::string> &Args) {
   for (const std::string &Arg : Args) {
-    llvm::StringRef NormalizedArg(Arg);
-    NormalizedArg.consume_front("-");
+    const llvm::StringRef NormalizedArg = normalizePluginArg(Arg);
 
     if (NormalizedArg == "quiet") {
       Options.Quiet = true;
       continue;
     }
 
-    if (NormalizedArg == "checks=all") {
-      Options.CheckAllocInLoop = true;
-      Options.CheckMathInLoop = true;
-      continue;
+    llvm::StringRef LoopAnalyseArg = NormalizedArg;
+    if (LoopAnalyseArg.consume_front("loop-analyse=")) {
+      if (applyLoopAnalyseOption(LoopAnalyseArg, Options.LoopAnalysis)) {
+        continue;
+      }
     }
 
-    if (NormalizedArg == "checks=alloc-in-loop") {
-      Options.CheckAllocInLoop = true;
-      Options.CheckMathInLoop = false;
-      continue;
-    }
-
-    if (NormalizedArg == "checks=math-in-loop") {
-      Options.CheckAllocInLoop = false;
-      Options.CheckMathInLoop = true;
-      continue;
-    }
-
-    if (NormalizedArg == "checks=none") {
-      Options.CheckAllocInLoop = false;
-      Options.CheckMathInLoop = false;
-      continue;
+    llvm::StringRef ChecksArg = NormalizedArg;
+    if (ChecksArg.consume_front("checks=")) {
+      if (applyLoopAnalyseOption(ChecksArg, Options.LoopAnalysis)) {
+        continue;
+      }
     }
 
     clang::DiagnosticsEngine &Diagnostics = Compiler.getDiagnostics();
