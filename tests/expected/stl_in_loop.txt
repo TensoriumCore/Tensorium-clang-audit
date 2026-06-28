@@ -1,0 +1,4 @@
+TCA008: STL container growth inside loop
+note: consider reserving capacity before the loop or using a pre-sized buffer
+TCA008: STL container growth inside loop
+note: consider reserving capacity before the loop or using a pre-sized buffer

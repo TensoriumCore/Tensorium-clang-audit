@@ -1,0 +1,12 @@
+TCA009: I/O operation inside loop
+note: consider buffering output or moving I/O outside the hot loop
+TCA009: I/O operation inside loop
+note: consider buffering output or moving I/O outside the hot loop
+TCA009: I/O operation inside loop
+note: consider buffering output or moving I/O outside the hot loop
+TCA009: I/O operation inside loop
+note: consider buffering output or moving I/O outside the hot loop
+TCA009: I/O operation inside loop
+note: consider buffering output or moving I/O outside the hot loop
+TCA009: I/O operation inside loop
+note: consider buffering output or moving I/O outside the hot loop

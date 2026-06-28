@@ -1,0 +1,12 @@
+TCA007: loop-invariant expensive math function call inside loop
+note: consider computing this value once before the loop
+TCA007: loop-invariant expensive math function call inside loop
+note: consider computing this value once before the loop
+TCA007: loop-invariant expensive math function call inside loop
+note: consider computing this value once before the loop
+TCA007: loop-invariant expensive math function call inside loop
+note: consider computing this value once before the loop
+TCA007: loop-invariant expensive math function call inside loop
+note: consider computing this value once before the loop
+TCA005: expensive math function call inside loop
+note: consider hoisting loop-invariant math or using a cheaper recurrence

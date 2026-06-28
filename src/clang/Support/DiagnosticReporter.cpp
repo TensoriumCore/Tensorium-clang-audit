@@ -20,6 +20,7 @@ constexpr char TCA007[] =
     "TCA007: loop-invariant expensive math function call inside loop";
 constexpr char TCA008[] = "TCA008: STL container growth inside loop";
 constexpr char TCA009[] = "TCA009: I/O operation inside loop";
+constexpr char TCA010[] = "TCA010: virtual call inside loop";
 
 constexpr char TCA001Note[] =
     "consider reusing storage outside the loop or using a stack/value object";
@@ -39,6 +40,8 @@ constexpr char TCA008Note[] =
     "consider reserving capacity before the loop or using a pre-sized buffer";
 constexpr char TCA009Note[] =
     "consider buffering output or moving I/O outside the hot loop";
+constexpr char TCA010Note[] =
+    "consider moving polymorphic dispatch outside the loop or using a concrete hot-path type";
 
 template <std::size_t WarningSize, std::size_t NoteSize>
 void reportWarningWithNote(clang::ASTContext &Context,
@@ -93,6 +96,9 @@ void reportDiagnostic(clang::ASTContext &Context,
     break;
   case TensoriumDiagnostic::IoInLoop:
     reportWarningWithNote(Context, Location, TCA009, TCA009Note);
+    break;
+  case TensoriumDiagnostic::VirtualCallInLoop:
+    reportWarningWithNote(Context, Location, TCA010, TCA010Note);
     break;
   }
 }

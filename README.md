@@ -36,6 +36,7 @@ The plugin currently reports:
 - expensive math calls inside loops: `std::pow`, `std::sqrt`, `std::sin`, `std::cos`
 - STL container growth inside loops: `push_back`, `emplace_back`
 - C and C++ I/O inside loops: `printf`, `fprintf`, `std::cout`, `std::cerr`
+- virtual calls inside loops
 
 Diagnostics use stable `TCAxxx` identifiers:
 
@@ -48,6 +49,7 @@ Diagnostics use stable `TCAxxx` identifiers:
 - `TCA007`: loop-invariant expensive math function call inside loop
 - `TCA008`: STL container growth inside loop
 - `TCA009`: I/O operation inside loop
+- `TCA010`: virtual call inside loop
 
 Each warning includes a follow-up note with a short remediation hint.
 
@@ -142,7 +144,8 @@ Supported options:
 - `--loop-analyse=maths`: enable expensive math loop analysis
 - `--loop-analyse=stl`: enable STL growth loop analysis
 - `--loop-analyse=io`: enable I/O loop analysis
-- `--loop-analyse=alloc,maths,stl,io`: enable selected loop analyses
+- `--loop-analyse=virtual-calls`: enable virtual-call loop analysis
+- `--loop-analyse=alloc,maths,stl,io,virtual-calls`: enable selected loop analyses
 
 Legacy `-checks=all`, `-checks=none`, `-checks=alloc-in-loop`, and `-checks=math-in-loop` are still accepted as compatibility aliases.
 
@@ -153,3 +156,4 @@ Legacy `-checks=all`, `-checks=none`, `-checks=alloc-in-loop`, and `-checks=math
 ```
 
 The test script builds the plugin and runs positive and negative fixtures from `tests/fixtures`.
+Filtered diagnostics are compared against golden files in `tests/expected`.

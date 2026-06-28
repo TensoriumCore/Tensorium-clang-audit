@@ -1,0 +1,20 @@
+TCA001: C++ allocation expression inside loop
+note: consider reusing storage outside the loop or using a stack/value object
+TCA002: C++ deallocation expression inside loop
+note: consider moving ownership cleanup outside the loop or using RAII storage
+TCA001: C++ allocation expression inside loop
+note: consider reusing storage outside the loop or using a stack/value object
+TCA002: C++ deallocation expression inside loop
+note: consider moving ownership cleanup outside the loop or using RAII storage
+TCA003: C allocation call inside loop
+note: consider allocating once before the loop and reusing the buffer
+TCA004: C deallocation call inside loop
+note: consider freeing loop-owned storage after the loop when ownership allows it
+TCA006: allocation or deallocation inside nested loop
+note: consider moving allocation outside the outer loop or reusing a workspace buffer
+TCA006: allocation or deallocation inside nested loop
+note: consider moving allocation outside the outer loop or reusing a workspace buffer
+TCA006: allocation or deallocation inside nested loop
+note: consider moving allocation outside the outer loop or reusing a workspace buffer
+TCA006: allocation or deallocation inside nested loop
+note: consider moving allocation outside the outer loop or reusing a workspace buffer

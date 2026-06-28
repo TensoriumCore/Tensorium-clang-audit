@@ -4,6 +4,7 @@
 #include "TensoriumClangAudit/Clang/Checks/IoInLoopCheck.hpp"
 #include "TensoriumClangAudit/Clang/Checks/MathInLoopCheck.hpp"
 #include "TensoriumClangAudit/Clang/Checks/StlInLoopCheck.hpp"
+#include "TensoriumClangAudit/Clang/Checks/VirtualCallInLoopCheck.hpp"
 #include "TensoriumClangAudit/Clang/Options.hpp"
 #include "TensoriumClangAudit/Clang/Support/DiagnosticReporter.hpp"
 #include "TensoriumClangAudit/Clang/Support/SourceUtils.hpp"
@@ -151,18 +152,21 @@ bool TensoriumClangAuditVisitor::VisitCXXMemberCallExpr(
   if (!Expression || LoopDepth == 0) {
     return true;
   }
-  if (!Options.LoopAnalysis.Stl) {
-    return true;
-  }
   if (!isInMainFile(Context, Expression->getBeginLoc())) {
     return true;
   }
-  if (!isStlGrowthCall(Expression)) {
+
+  if (Options.LoopAnalysis.Stl && isStlGrowthCall(Expression)) {
+    reportDiagnostic(Context, Expression->getBeginLoc(),
+                     TensoriumDiagnostic::StlGrowthInLoop);
     return true;
   }
 
-  reportDiagnostic(Context, Expression->getBeginLoc(),
-                   TensoriumDiagnostic::StlGrowthInLoop);
+  if (Options.LoopAnalysis.VirtualCalls && isVirtualDispatchCall(Expression)) {
+    reportDiagnostic(Context, Expression->getBeginLoc(),
+                     TensoriumDiagnostic::VirtualCallInLoop);
+  }
+
   return true;
 }
 

@@ -1,0 +1,2 @@
+TCA010: virtual call inside loop
+note: consider moving polymorphic dispatch outside the loop or using a concrete hot-path type

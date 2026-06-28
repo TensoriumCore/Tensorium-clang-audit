@@ -31,6 +31,8 @@ diagnosticCode(tensorium_clang_audit::TensoriumDiagnostic Diagnostic) {
     return "TCA008";
   case TensoriumDiagnostic::IoInLoop:
     return "TCA009";
+  case TensoriumDiagnostic::VirtualCallInLoop:
+    return "TCA010";
   }
   return "";
 }

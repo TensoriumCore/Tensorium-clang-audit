@@ -9,12 +9,15 @@ printf '[build]\nok\n'
 
 PLUGIN_PATH="./build/libTensoriumClangAudit.so"
 DEFAULT_CLANG="/opt/local/libexec/llvm-20/bin/clang++"
+TMP_DIR="${TMPDIR:-/tmp}/tensorium-clang-audit-tests"
 
 if [[ -x "${DEFAULT_CLANG}" ]]; then
   CLANGXX="${CLANGXX:-${DEFAULT_CLANG}}"
 else
   CLANGXX="${CLANGXX:-clang++}"
 fi
+
+mkdir -p "${TMP_DIR}"
 
 run_plugin() {
   local source_file="$1"
@@ -25,7 +28,7 @@ run_plugin() {
     -Xclang -plugin -Xclang tensorium-clang-audit \
     "$@" \
     -c "${source_file}" \
-    -o /tmp/tensorium-clang-audit-test.o 2>&1
+    -o "${TMP_DIR}/test.o" 2>&1
 }
 
 filter_tensorium_output() {
@@ -37,51 +40,6 @@ filter_tensorium_output() {
     <<<"${output}"
 }
 
-expect_output() {
-  local output="$1"
-  local needle="$2"
-
-  if ! grep -Fq "${needle}" <<<"${output}"; then
-    printf 'missing expected filtered output: %s\n' "${needle}" >&2
-    printf '%s\n' "${output}" >&2
-    exit 1
-  fi
-}
-
-expect_warning_count() {
-  local output="$1"
-  local expected="$2"
-  local actual
-
-  actual="$(grep -c '^TCA[0-9][0-9][0-9]:' <<<"${output}" || true)"
-  if [[ "${actual}" -ne "${expected}" ]]; then
-    printf 'expected %s filtered warnings, got %s\n' "${expected}" "${actual}" >&2
-    printf '%s\n' "${output}" >&2
-    exit 1
-  fi
-}
-
-expect_no_diagnostics() {
-  local output="$1"
-
-  if [[ -n "${output}" ]]; then
-    printf 'expected no filtered diagnostics, got:\n%s\n' "${output}" >&2
-    exit 1
-  fi
-}
-
-log_diagnostics() {
-  local label="$1"
-  local output="$2"
-
-  printf '\n[%s]\n' "${label}"
-  if [[ -n "${output}" ]]; then
-    printf '%s\n' "${output}"
-  else
-    printf 'no Tensorium diagnostics\n'
-  fi
-}
-
 run_filtered() {
   local raw_output
 
@@ -89,98 +47,96 @@ run_filtered() {
   filter_tensorium_output "${raw_output}"
 }
 
-ALLOC_OUTPUT="$(run_filtered tests/fixtures/alloc_in_loop.cpp \
+run_case() {
+  local label="$1"
+  local expected_file="$2"
+  local source_file="$3"
+  shift 3
+
+  local actual_file="${TMP_DIR}/${label}.actual"
+  run_filtered "${source_file}" "$@" >"${actual_file}"
+
+  printf '\n[%s]\n' "${label}"
+  if [[ -s "${actual_file}" ]]; then
+    cat "${actual_file}"
+  else
+    printf 'no Tensorium diagnostics\n'
+  fi
+
+  if ! diff -u "${expected_file}" "${actual_file}"; then
+    printf 'golden mismatch for %s\n' "${label}" >&2
+    exit 1
+  fi
+}
+
+run_case "loop-analyse=alloc" tests/expected/alloc_in_loop.txt \
+  tests/fixtures/alloc_in_loop.cpp \
   -Xclang -plugin-arg-tensorium-clang-audit \
-  -Xclang --loop-analyse=alloc)"
-log_diagnostics "loop-analyse=alloc" "${ALLOC_OUTPUT}"
+  -Xclang --loop-analyse=alloc
 
-expect_output "${ALLOC_OUTPUT}" "TCA001: C++ allocation expression inside loop"
-expect_output "${ALLOC_OUTPUT}" "TCA002: C++ deallocation expression inside loop"
-expect_output "${ALLOC_OUTPUT}" "TCA003: C allocation call inside loop"
-expect_output "${ALLOC_OUTPUT}" "TCA004: C deallocation call inside loop"
-expect_output "${ALLOC_OUTPUT}" "TCA006: allocation or deallocation inside nested loop"
-expect_output "${ALLOC_OUTPUT}" "note: consider reusing storage outside the loop"
-expect_output "${ALLOC_OUTPUT}" "note: consider moving ownership cleanup outside the loop"
-expect_output "${ALLOC_OUTPUT}" "note: consider allocating once before the loop"
-expect_output "${ALLOC_OUTPUT}" "note: consider freeing loop-owned storage after the loop"
-expect_output "${ALLOC_OUTPUT}" "note: consider moving allocation outside the outer loop"
-expect_warning_count "${ALLOC_OUTPUT}" 10
-
-MATH_OUTPUT="$(run_filtered tests/fixtures/math_in_loop.cpp \
+run_case "loop-analyse=maths" tests/expected/math_in_loop.txt \
+  tests/fixtures/math_in_loop.cpp \
   -Xclang -plugin-arg-tensorium-clang-audit \
-  -Xclang --loop-analyse=maths)"
-log_diagnostics "loop-analyse=maths" "${MATH_OUTPUT}"
+  -Xclang --loop-analyse=maths
 
-expect_output "${MATH_OUTPUT}" "TCA005: expensive math function call inside loop"
-expect_output "${MATH_OUTPUT}" "note: consider hoisting loop-invariant math"
-expect_output "${MATH_OUTPUT}" "TCA007: loop-invariant expensive math function call inside loop"
-expect_output "${MATH_OUTPUT}" "note: consider computing this value once before the loop"
-expect_warning_count "${MATH_OUTPUT}" 6
-
-ALL_OUTPUT="$(run_filtered tests/fixtures/math_in_loop.cpp \
+run_case "loop-analyse=all" tests/expected/math_in_loop.txt \
+  tests/fixtures/math_in_loop.cpp \
   -Xclang -plugin-arg-tensorium-clang-audit \
-  -Xclang --loop-analyse=all)"
-log_diagnostics "loop-analyse=all" "${ALL_OUTPUT}"
-expect_output "${ALL_OUTPUT}" "TCA007: loop-invariant expensive math function call inside loop"
-expect_warning_count "${ALL_OUTPUT}" 6
+  -Xclang --loop-analyse=all
 
-STL_OUTPUT="$(run_filtered tests/fixtures/stl_in_loop.cpp \
+run_case "loop-analyse=stl" tests/expected/stl_in_loop.txt \
+  tests/fixtures/stl_in_loop.cpp \
   -Xclang -plugin-arg-tensorium-clang-audit \
-  -Xclang --loop-analyse=stl)"
-log_diagnostics "loop-analyse=stl" "${STL_OUTPUT}"
-expect_output "${STL_OUTPUT}" "TCA008: STL container growth inside loop"
-expect_output "${STL_OUTPUT}" "note: consider reserving capacity before the loop"
-expect_warning_count "${STL_OUTPUT}" 2
+  -Xclang --loop-analyse=stl
 
-IO_OUTPUT="$(run_filtered tests/fixtures/io_in_loop.cpp \
+run_case "loop-analyse=io" tests/expected/io_in_loop.txt \
+  tests/fixtures/io_in_loop.cpp \
   -Xclang -plugin-arg-tensorium-clang-audit \
-  -Xclang --loop-analyse=io)"
-log_diagnostics "loop-analyse=io" "${IO_OUTPUT}"
-expect_output "${IO_OUTPUT}" "TCA009: I/O operation inside loop"
-expect_output "${IO_OUTPUT}" "note: consider buffering output or moving I/O outside the hot loop"
-expect_warning_count "${IO_OUTPUT}" 6
+  -Xclang --loop-analyse=io
 
-LEGACY_OUTPUT="$(run_filtered tests/fixtures/alloc_in_loop.cpp \
+run_case "loop-analyse=virtual-calls" tests/expected/virtual_call_in_loop.txt \
+  tests/fixtures/virtual_call_in_loop.cpp \
   -Xclang -plugin-arg-tensorium-clang-audit \
-  -Xclang -checks=alloc-in-loop)"
-log_diagnostics "legacy checks=alloc-in-loop" "${LEGACY_OUTPUT}"
-expect_output "${LEGACY_OUTPUT}" "TCA006: allocation or deallocation inside nested loop"
-expect_warning_count "${LEGACY_OUTPUT}" 10
+  -Xclang --loop-analyse=virtual-calls
 
-DISABLED_OUTPUT="$(run_filtered tests/fixtures/alloc_in_loop.cpp \
+run_case "legacy checks=alloc-in-loop" tests/expected/alloc_in_loop.txt \
+  tests/fixtures/alloc_in_loop.cpp \
   -Xclang -plugin-arg-tensorium-clang-audit \
-  -Xclang --loop-analyse=none)"
-log_diagnostics "loop-analyse=none" "${DISABLED_OUTPUT}"
-expect_no_diagnostics "${DISABLED_OUTPUT}"
+  -Xclang -checks=alloc-in-loop
 
-QUIET_OUTPUT="$(run_filtered tests/fixtures/alloc_in_loop.cpp \
+run_case "loop-analyse=none" tests/expected/empty.txt \
+  tests/fixtures/alloc_in_loop.cpp \
+  -Xclang -plugin-arg-tensorium-clang-audit \
+  -Xclang --loop-analyse=none
+
+run_case "quiet loop-analyse=alloc" tests/expected/alloc_in_loop.txt \
+  tests/fixtures/alloc_in_loop.cpp \
   -Xclang -plugin-arg-tensorium-clang-audit \
   -Xclang -quiet \
   -Xclang -plugin-arg-tensorium-clang-audit \
-  -Xclang --loop-analyse=alloc)"
-log_diagnostics "quiet loop-analyse=alloc" "${QUIET_OUTPUT}"
-expect_output "${QUIET_OUTPUT}" "TCA001: C++ allocation expression inside loop"
+  -Xclang --loop-analyse=alloc
 
-NEGATIVE_OUTPUT="$(run_filtered tests/fixtures/no_alloc_in_loop.cpp)"
-log_diagnostics "negative alloc fixture" "${NEGATIVE_OUTPUT}"
-expect_no_diagnostics "${NEGATIVE_OUTPUT}"
+run_case "negative alloc fixture" tests/expected/empty.txt \
+  tests/fixtures/no_alloc_in_loop.cpp
 
-NEGATIVE_MATH_OUTPUT="$(run_filtered tests/fixtures/no_math_in_loop.cpp \
+run_case "negative math fixture" tests/expected/empty.txt \
+  tests/fixtures/no_math_in_loop.cpp \
   -Xclang -plugin-arg-tensorium-clang-audit \
-  -Xclang --loop-analyse=maths)"
-log_diagnostics "negative math fixture" "${NEGATIVE_MATH_OUTPUT}"
-expect_no_diagnostics "${NEGATIVE_MATH_OUTPUT}"
+  -Xclang --loop-analyse=maths
 
-NEGATIVE_STL_OUTPUT="$(run_filtered tests/fixtures/no_stl_in_loop.cpp \
+run_case "negative stl fixture" tests/expected/empty.txt \
+  tests/fixtures/no_stl_in_loop.cpp \
   -Xclang -plugin-arg-tensorium-clang-audit \
-  -Xclang --loop-analyse=stl)"
-log_diagnostics "negative stl fixture" "${NEGATIVE_STL_OUTPUT}"
-expect_no_diagnostics "${NEGATIVE_STL_OUTPUT}"
+  -Xclang --loop-analyse=stl
 
-NEGATIVE_IO_OUTPUT="$(run_filtered tests/fixtures/no_io_in_loop.cpp \
+run_case "negative io fixture" tests/expected/empty.txt \
+  tests/fixtures/no_io_in_loop.cpp \
   -Xclang -plugin-arg-tensorium-clang-audit \
-  -Xclang --loop-analyse=io)"
-log_diagnostics "negative io fixture" "${NEGATIVE_IO_OUTPUT}"
-expect_no_diagnostics "${NEGATIVE_IO_OUTPUT}"
+  -Xclang --loop-analyse=io
+
+run_case "negative virtual-call fixture" tests/expected/empty.txt \
+  tests/fixtures/no_virtual_call_in_loop.cpp \
+  -Xclang -plugin-arg-tensorium-clang-audit \
+  -Xclang --loop-analyse=virtual-calls
 
 printf '\nall plugin tests passed\n'

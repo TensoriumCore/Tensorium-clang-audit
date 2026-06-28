@@ -32,6 +32,7 @@ bool applyLoopAnalyseOption(
   ParsedOptions.Maths = false;
   ParsedOptions.Stl = false;
   ParsedOptions.Io = false;
+  ParsedOptions.VirtualCalls = false;
   bool SawKnownValue = false;
   for (llvm::StringRef Entry : Values) {
     Entry = Entry.trim();
@@ -41,6 +42,7 @@ bool applyLoopAnalyseOption(
       ParsedOptions.Maths = true;
       ParsedOptions.Stl = true;
       ParsedOptions.Io = true;
+      ParsedOptions.VirtualCalls = true;
       SawKnownValue = true;
       continue;
     }
@@ -50,6 +52,7 @@ bool applyLoopAnalyseOption(
       ParsedOptions.Maths = false;
       ParsedOptions.Stl = false;
       ParsedOptions.Io = false;
+      ParsedOptions.VirtualCalls = false;
       SawKnownValue = true;
       continue;
     }
@@ -74,6 +77,13 @@ bool applyLoopAnalyseOption(
 
     if (Entry == "io" || Entry == "i/o") {
       ParsedOptions.Io = true;
+      SawKnownValue = true;
+      continue;
+    }
+
+    if (Entry == "virtual" || Entry == "virtual-call" ||
+        Entry == "virtual-calls" || Entry == "dispatch") {
+      ParsedOptions.VirtualCalls = true;
       SawKnownValue = true;
       continue;
     }

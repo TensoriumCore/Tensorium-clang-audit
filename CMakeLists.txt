@@ -22,6 +22,7 @@ set(TENSORIUM_CLANG_AUDIT_SOURCES
   src/clang/Checks/IoInLoopCheck.cpp
   src/clang/Checks/MathInLoopCheck.cpp
   src/clang/Checks/StlInLoopCheck.cpp
+  src/clang/Checks/VirtualCallInLoopCheck.cpp
   src/clang/Support/DiagnosticReporter.cpp
   src/clang/Support/SourceUtils.cpp
   src/clang/Support/Suppression.cpp

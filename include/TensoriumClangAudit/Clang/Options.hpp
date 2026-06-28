@@ -7,6 +7,7 @@ struct LoopAnalysisOptions {
   bool Maths = true;
   bool Stl = true;
   bool Io = true;
+  bool VirtualCalls = true;
 };
 
 struct TensoriumClangAuditOptions {
