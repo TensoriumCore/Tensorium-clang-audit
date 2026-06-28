@@ -15,6 +15,8 @@ enum class TensoriumDiagnostic {
   ExpensiveMathInLoop,
   NestedAllocationInLoop,
   LoopInvariantExpensiveMathInLoop,
+  StlGrowthInLoop,
+  IoInLoop,
 };
 
 void reportDiagnostic(clang::ASTContext &Context,

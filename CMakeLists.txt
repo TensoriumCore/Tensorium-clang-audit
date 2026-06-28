@@ -19,9 +19,12 @@ set(TENSORIUM_CLANG_AUDIT_SOURCES
   src/clang/Plugin.cpp
   src/clang/Visitor.cpp
   src/clang/Checks/AllocationInLoopCheck.cpp
+  src/clang/Checks/IoInLoopCheck.cpp
   src/clang/Checks/MathInLoopCheck.cpp
+  src/clang/Checks/StlInLoopCheck.cpp
   src/clang/Support/DiagnosticReporter.cpp
   src/clang/Support/SourceUtils.cpp
+  src/clang/Support/Suppression.cpp
 )
 
 add_library(TensoriumClangAudit SHARED

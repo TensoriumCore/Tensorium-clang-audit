@@ -30,6 +30,8 @@ bool applyLoopAnalyseOption(
   tensorium_clang_audit::LoopAnalysisOptions ParsedOptions;
   ParsedOptions.Alloc = false;
   ParsedOptions.Maths = false;
+  ParsedOptions.Stl = false;
+  ParsedOptions.Io = false;
   bool SawKnownValue = false;
   for (llvm::StringRef Entry : Values) {
     Entry = Entry.trim();
@@ -37,6 +39,8 @@ bool applyLoopAnalyseOption(
     if (Entry == "all") {
       ParsedOptions.Alloc = true;
       ParsedOptions.Maths = true;
+      ParsedOptions.Stl = true;
+      ParsedOptions.Io = true;
       SawKnownValue = true;
       continue;
     }
@@ -44,6 +48,8 @@ bool applyLoopAnalyseOption(
     if (Entry == "none") {
       ParsedOptions.Alloc = false;
       ParsedOptions.Maths = false;
+      ParsedOptions.Stl = false;
+      ParsedOptions.Io = false;
       SawKnownValue = true;
       continue;
     }
@@ -56,6 +62,18 @@ bool applyLoopAnalyseOption(
 
     if (Entry == "maths" || Entry == "math" || Entry == "math-in-loop") {
       ParsedOptions.Maths = true;
+      SawKnownValue = true;
+      continue;
+    }
+
+    if (Entry == "stl" || Entry == "stl-growth") {
+      ParsedOptions.Stl = true;
+      SawKnownValue = true;
+      continue;
+    }
+
+    if (Entry == "io" || Entry == "i/o") {
+      ParsedOptions.Io = true;
       SawKnownValue = true;
       continue;
     }

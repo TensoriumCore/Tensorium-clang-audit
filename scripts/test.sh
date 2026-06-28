@@ -124,6 +124,22 @@ log_diagnostics "loop-analyse=all" "${ALL_OUTPUT}"
 expect_output "${ALL_OUTPUT}" "TCA007: loop-invariant expensive math function call inside loop"
 expect_warning_count "${ALL_OUTPUT}" 6
 
+STL_OUTPUT="$(run_filtered tests/fixtures/stl_in_loop.cpp \
+  -Xclang -plugin-arg-tensorium-clang-audit \
+  -Xclang --loop-analyse=stl)"
+log_diagnostics "loop-analyse=stl" "${STL_OUTPUT}"
+expect_output "${STL_OUTPUT}" "TCA008: STL container growth inside loop"
+expect_output "${STL_OUTPUT}" "note: consider reserving capacity before the loop"
+expect_warning_count "${STL_OUTPUT}" 2
+
+IO_OUTPUT="$(run_filtered tests/fixtures/io_in_loop.cpp \
+  -Xclang -plugin-arg-tensorium-clang-audit \
+  -Xclang --loop-analyse=io)"
+log_diagnostics "loop-analyse=io" "${IO_OUTPUT}"
+expect_output "${IO_OUTPUT}" "TCA009: I/O operation inside loop"
+expect_output "${IO_OUTPUT}" "note: consider buffering output or moving I/O outside the hot loop"
+expect_warning_count "${IO_OUTPUT}" 6
+
 LEGACY_OUTPUT="$(run_filtered tests/fixtures/alloc_in_loop.cpp \
   -Xclang -plugin-arg-tensorium-clang-audit \
   -Xclang -checks=alloc-in-loop)"
@@ -154,5 +170,17 @@ NEGATIVE_MATH_OUTPUT="$(run_filtered tests/fixtures/no_math_in_loop.cpp \
   -Xclang --loop-analyse=maths)"
 log_diagnostics "negative math fixture" "${NEGATIVE_MATH_OUTPUT}"
 expect_no_diagnostics "${NEGATIVE_MATH_OUTPUT}"
+
+NEGATIVE_STL_OUTPUT="$(run_filtered tests/fixtures/no_stl_in_loop.cpp \
+  -Xclang -plugin-arg-tensorium-clang-audit \
+  -Xclang --loop-analyse=stl)"
+log_diagnostics "negative stl fixture" "${NEGATIVE_STL_OUTPUT}"
+expect_no_diagnostics "${NEGATIVE_STL_OUTPUT}"
+
+NEGATIVE_IO_OUTPUT="$(run_filtered tests/fixtures/no_io_in_loop.cpp \
+  -Xclang -plugin-arg-tensorium-clang-audit \
+  -Xclang --loop-analyse=io)"
+log_diagnostics "negative io fixture" "${NEGATIVE_IO_OUTPUT}"
+expect_no_diagnostics "${NEGATIVE_IO_OUTPUT}"
 
 printf '\nall plugin tests passed\n'

@@ -1,7 +1,9 @@
 #include "TensoriumClangAudit/Clang/Visitor.hpp"
 
 #include "TensoriumClangAudit/Clang/Checks/AllocationInLoopCheck.hpp"
+#include "TensoriumClangAudit/Clang/Checks/IoInLoopCheck.hpp"
 #include "TensoriumClangAudit/Clang/Checks/MathInLoopCheck.hpp"
+#include "TensoriumClangAudit/Clang/Checks/StlInLoopCheck.hpp"
 #include "TensoriumClangAudit/Clang/Options.hpp"
 #include "TensoriumClangAudit/Clang/Support/DiagnosticReporter.hpp"
 #include "TensoriumClangAudit/Clang/Support/SourceUtils.hpp"
@@ -109,7 +111,8 @@ bool TensoriumClangAuditVisitor::VisitCallExpr(clang::CallExpr *Expression) {
       Options.LoopAnalysis.Alloc && isCDeallocationFunction(Callee);
   const bool IsExpensiveMath =
       Options.LoopAnalysis.Maths && isExpensiveMathFunction(Callee);
-  if (!IsAllocation && !IsDeallocation && !IsExpensiveMath) {
+  const bool IsCIo = Options.LoopAnalysis.Io && isCIoCall(Expression);
+  if (!IsAllocation && !IsDeallocation && !IsExpensiveMath && !IsCIo) {
     return true;
   }
   if (!isInMainFile(Context, Expression->getBeginLoc())) {
@@ -125,6 +128,9 @@ bool TensoriumClangAuditVisitor::VisitCallExpr(clang::CallExpr *Expression) {
   } else if (IsDeallocation) {
     reportDiagnostic(Context, Expression->getBeginLoc(),
                      TensoriumDiagnostic::CDeallocationInLoop);
+  } else if (IsCIo) {
+    reportDiagnostic(Context, Expression->getBeginLoc(),
+                     TensoriumDiagnostic::IoInLoop);
   } else {
     const clang::Stmt *CurrentLoop =
         LoopStack.empty() ? nullptr : LoopStack.back();
@@ -137,6 +143,46 @@ bool TensoriumClangAuditVisitor::VisitCallExpr(clang::CallExpr *Expression) {
                          : TensoriumDiagnostic::ExpensiveMathInLoop);
   }
 
+  return true;
+}
+
+bool TensoriumClangAuditVisitor::VisitCXXMemberCallExpr(
+    clang::CXXMemberCallExpr *Expression) {
+  if (!Expression || LoopDepth == 0) {
+    return true;
+  }
+  if (!Options.LoopAnalysis.Stl) {
+    return true;
+  }
+  if (!isInMainFile(Context, Expression->getBeginLoc())) {
+    return true;
+  }
+  if (!isStlGrowthCall(Expression)) {
+    return true;
+  }
+
+  reportDiagnostic(Context, Expression->getBeginLoc(),
+                   TensoriumDiagnostic::StlGrowthInLoop);
+  return true;
+}
+
+bool TensoriumClangAuditVisitor::VisitCXXOperatorCallExpr(
+    clang::CXXOperatorCallExpr *Expression) {
+  if (!Expression || LoopDepth == 0) {
+    return true;
+  }
+  if (!Options.LoopAnalysis.Io) {
+    return true;
+  }
+  if (!isInMainFile(Context, Expression->getBeginLoc())) {
+    return true;
+  }
+  if (!isCxxStreamOutputCall(Expression)) {
+    return true;
+  }
+
+  reportDiagnostic(Context, Expression->getBeginLoc(),
+                   TensoriumDiagnostic::IoInLoop);
   return true;
 }
 

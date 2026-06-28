@@ -34,6 +34,8 @@ The plugin currently reports:
 - C++ `delete` / `delete[]`
 - C `malloc`, `calloc`, `realloc`, and `free`
 - expensive math calls inside loops: `std::pow`, `std::sqrt`, `std::sin`, `std::cos`
+- STL container growth inside loops: `push_back`, `emplace_back`
+- C and C++ I/O inside loops: `printf`, `fprintf`, `std::cout`, `std::cerr`
 
 Diagnostics use stable `TCAxxx` identifiers:
 
@@ -44,8 +46,24 @@ Diagnostics use stable `TCAxxx` identifiers:
 - `TCA005`: expensive math function call inside loop
 - `TCA006`: allocation or deallocation inside nested loop
 - `TCA007`: loop-invariant expensive math function call inside loop
+- `TCA008`: STL container growth inside loop
+- `TCA009`: I/O operation inside loop
 
 Each warning includes a follow-up note with a short remediation hint.
+
+Suppress a diagnostic on the next line with:
+
+```cpp
+// tensorium-clang-audit: disable-next-line TCA008
+values.push_back(i);
+```
+
+Use `all` to suppress every Tensorium diagnostic on the next line:
+
+```cpp
+// tensorium-clang-audit: disable-next-line all
+std::printf("%d\n", i);
+```
 
 ## Build
 
@@ -122,7 +140,9 @@ Supported options:
 - `--loop-analyse=none`: disable loop analysis
 - `--loop-analyse=alloc`: enable allocation/deallocation loop analysis
 - `--loop-analyse=maths`: enable expensive math loop analysis
-- `--loop-analyse=alloc,maths`: enable selected loop analyses
+- `--loop-analyse=stl`: enable STL growth loop analysis
+- `--loop-analyse=io`: enable I/O loop analysis
+- `--loop-analyse=alloc,maths,stl,io`: enable selected loop analyses
 
 Legacy `-checks=all`, `-checks=none`, `-checks=alloc-in-loop`, and `-checks=math-in-loop` are still accepted as compatibility aliases.
 

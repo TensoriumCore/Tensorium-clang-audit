@@ -10,6 +10,8 @@ class ASTContext;
 class CallExpr;
 class CXXDeleteExpr;
 class CXXNewExpr;
+class CXXMemberCallExpr;
+class CXXOperatorCallExpr;
 class DoStmt;
 class ForStmt;
 class WhileStmt;
@@ -28,6 +30,8 @@ public:
   bool VisitCXXNewExpr(clang::CXXNewExpr *Expression);
   bool VisitCXXDeleteExpr(clang::CXXDeleteExpr *Expression);
   bool VisitCallExpr(clang::CallExpr *Expression);
+  bool VisitCXXMemberCallExpr(clang::CXXMemberCallExpr *Expression);
+  bool VisitCXXOperatorCallExpr(clang::CXXOperatorCallExpr *Expression);
 
   bool TraverseForStmt(clang::ForStmt *Statement);
   bool TraverseWhileStmt(clang::WhileStmt *Statement);
