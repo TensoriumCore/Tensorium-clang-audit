@@ -16,17 +16,24 @@ include/TensoriumClangAudit/
     Options.hpp
     Plugin.hpp
     Visitor.hpp
+  LLVM/
+    Passes/      # LLVM IR pass skeletons
+    Plugin.hpp
 src/
   clang/
     Checks/
     Support/
     Plugin.cpp
     Visitor.cpp
+  llvm/
+    Passes/
+    Plugin.cpp
 tests/
   fixtures/
 ```
 
-Top-level headers such as `include/TensoriumClangAudit/Visitor.hpp` are compatibility wrappers around the `Clang/` headers. A future LLVM IR pass should live beside this under its own `LLVM/` include/source subtree and build as a separate plugin target.
+Top-level headers such as `include/TensoriumClangAudit/Visitor.hpp` are compatibility wrappers around the `Clang/` headers.
+The LLVM IR side builds as a separate plugin target named `TensoriumLLVMIRAudit`.
 
 The plugin currently reports:
 
@@ -89,6 +96,8 @@ Or use the helper script:
 
 ## Run
 
+### Clang frontend plugin
+
 Basic plugin invocation:
 
 ```sh
@@ -148,6 +157,29 @@ Supported options:
 - `--loop-analyse=alloc,maths,stl,io,virtual-calls`: enable selected loop analyses
 
 Legacy `-checks=all`, `-checks=none`, `-checks=alloc-in-loop`, and `-checks=math-in-loop` are still accepted as compatibility aliases.
+
+### LLVM IR plugin
+
+The LLVM IR skeleton pass is loadable with `opt`:
+
+```sh
+clang++ -std=c++17 -S -emit-llvm examples/sample.cpp -o /tmp/tensorium-sample.ll
+
+opt \
+  -load-pass-plugin ./build/libTensoriumLLVMIRAudit.so \
+  -passes=tensorium-ir-audit \
+  -disable-output \
+  /tmp/tensorium-sample.ll
+```
+
+Or use:
+
+```sh
+./scripts/run_ir_sample.sh
+```
+
+The IR pass currently only prints the module and function names it visits.
+Real LLVM IR analysis will be added later.
 
 ## Test
 

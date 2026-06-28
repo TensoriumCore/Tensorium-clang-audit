@@ -28,6 +28,11 @@ set(TENSORIUM_CLANG_AUDIT_SOURCES
   src/clang/Support/Suppression.cpp
 )
 
+set(TENSORIUM_LLVM_IR_AUDIT_SOURCES
+  src/llvm/Plugin.cpp
+  src/llvm/Passes/IRAuditPass.cpp
+)
+
 add_library(TensoriumClangAudit SHARED
   ${TENSORIUM_CLANG_AUDIT_SOURCES}
 )
@@ -52,8 +57,33 @@ target_link_libraries(TensoriumClangAudit
     clangSerialization
 )
 
+add_library(TensoriumLLVMIRAudit SHARED
+  ${TENSORIUM_LLVM_IR_AUDIT_SOURCES}
+)
+
+target_include_directories(TensoriumLLVMIRAudit
+  PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
+    ${LLVM_INCLUDE_DIRS}
+)
+
+target_compile_definitions(TensoriumLLVMIRAudit
+  PRIVATE
+    ${LLVM_DEFINITIONS}
+)
+
+target_link_libraries(TensoriumLLVMIRAudit
+  PRIVATE
+    LLVMCore
+    LLVMPasses
+    LLVMSupport
+)
+
 if(APPLE)
   set_target_properties(TensoriumClangAudit PROPERTIES
+    SUFFIX ".so"
+  )
+  set_target_properties(TensoriumLLVMIRAudit PROPERTIES
     SUFFIX ".so"
   )
 endif()
